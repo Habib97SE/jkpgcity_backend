@@ -2,10 +2,9 @@ const {
     DataTypes
 } = require('sequelize');
 const sequelize = require("../../config/sequelize");
-const Venue = require('./Venue');
 
-const VenueCategory = sequelize.define('venueCategory', {
-    venueCategoryId: {
+const NewsCategory = sequelize.define('newsCategory', {
+    newsCategoryId: {
         type: DataTypes.INTEGER,
         primaryKey: true,
         autoIncrement: true
@@ -28,7 +27,4 @@ const VenueCategory = sequelize.define('venueCategory', {
     }
 });
 
-
-
-
-module.exports = VenueCategory;
+module.exports = NewsCategory;

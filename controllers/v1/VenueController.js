@@ -217,3 +217,5 @@ class VenueController {
     }
 
 }
+
+module.exports = new VenueController();

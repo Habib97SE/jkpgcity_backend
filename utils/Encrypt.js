@@ -29,3 +29,5 @@ class Encrypt {
         return bcrypt.hashSync(email + password, salt);
     }
 }
+
+module.exports = Encrypt;

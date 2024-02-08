@@ -25,7 +25,9 @@ const User = sequelize.define('user', {
         allowNull: false,
         validate: {
             isEmail: true,
-            unique: true
+        },
+        unique: {
+            msg: "Email already exists"
         }
     },
     salt: {

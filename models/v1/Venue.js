@@ -14,17 +14,27 @@ const Venue = sequelize.define('venue', {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: 'venueCategory',
+            model: 'venueCategories',
             key: 'venueCategoryId'
         }
     },
     name: {
         type: DataTypes.STRING,
-        allowNull: false
+        allowNull: false,
+        validate: {
+            is: /^[a-zA-Z\s]*$/
+        }
     },
     address: {
         type: DataTypes.STRING,
-        allowNull: false
+        allowNull: false,
+        Validate: [{
+                notEmpty: true
+            },
+            {
+                is: /^[a-zA-Z\s]*$/
+            }
+        ]
     },
     phone: {
         type: DataTypes.STRING,

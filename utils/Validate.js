@@ -32,13 +32,10 @@ class Validate {
         if (!this.isPassword(user.password)) {
             return false;
         }
-        if (!this.name(user.firstName)) {
+        if (!this.isName(user.firstName)) {
             return false;
         }
-        if (!this.name(user.lastName)) {
-            return false;
-        }
-        if (!this.isPhone(user.phone)) {
+        if (!this.isName(user.lastName)) {
             return false;
         }
         return true;
@@ -60,3 +57,5 @@ class Validate {
         return true;
     }
 }
+
+module.exports = Validate;

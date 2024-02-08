@@ -5,30 +5,6 @@ const {
     Op
 } = require('sequelize');
 
-function createHateoas() {
-    return {
-        getUsers: {
-            href: 'api/v1/users',
-            method: 'GET'
-        },
-        getUser: {
-            href: 'api/v1/users/{userId}',
-            method: 'GET'
-        },
-        createUser: {
-            href: 'api/v1/users',
-            method: 'POST'
-        },
-        updateUser: {
-            href: 'api/v1/users/{userId}',
-            method: 'PUT'
-        },
-        deleteUser: {
-            href: 'api/v1/users/{userId}',
-            method: 'DELETE'
-        }
-    }
-}
 
 class UserController {
 
@@ -39,7 +15,10 @@ class UserController {
      * @returns : Promise<void> : A list of users
      */
     async getUsers(req, res) {
-
+        let queryOptions = {
+            where: {},
+            order: []
+        };
         const page = parseInt(req.query.page, 10) || 1; // Default to first page
         const pageSize = parseInt(req.query.pageSize, 10) || 10; // Default to 10 items per page
         queryOptions.limit = pageSize;
@@ -52,10 +31,7 @@ class UserController {
             return;
         }
 
-        let queryOptions = {
-            where: {},
-            order: []
-        };
+
         if (req.query.firstName) {
             queryOptions.where.firstName = req.query.firstName;
         }
@@ -77,19 +53,18 @@ class UserController {
                 count,
                 rows: users
             } = await User.findAndCountAll(queryOptions);
-            const hateoas = createHateoas();
             users.forEach(user => {
                 user.dataValues.links = {
                     self: {
-                        href: `api/v1/users/${user.id}`,
+                        href: `api/v1/users/${user.userId}`,
                         method: 'GET'
                     },
                     update: {
-                        href: `api/v1/users/${user.id}`,
+                        href: `api/v1/users/${user.userId}`,
                         method: 'PUT'
                     },
                     delete: {
-                        href: `api/v1/users/${user.id}`,
+                        href: `api/v1/users/${user.userId}`,
                         method: 'DELETE'
                     }
                 }
@@ -116,7 +91,7 @@ class UserController {
 
     async getUser(req, res) {
         try {
-            const userId = req.params.userId;
+            const userId = req.params.id;
             if (!Validate.isNumber(userId)) {
                 res.status(400).json({
                     message: 'Invalid user id'
@@ -132,15 +107,15 @@ class UserController {
             }
             user.dataValues.links = {
                 self: {
-                    href: `api/v1/users/${user.id}`,
+                    href: `api/v1/users/${user.userId}`,
                     method: 'GET'
                 },
                 update: {
-                    href: `api/v1/users/${user.id}`,
+                    href: `api/v1/users/${user.userId}`,
                     method: 'PUT'
                 },
                 delete: {
-                    href: `api/v1/users/${user.id}`,
+                    href: `api/v1/users/${user.userId}`,
                     method: 'DELETE'
                 }
             }
@@ -163,6 +138,7 @@ class UserController {
                 lastName: req.body.lastName,
                 email: req.body.email,
                 password: req.body.password,
+                roleId: req.body.role
             }
             if (!Validate.newUser(user)) {
                 res.status(400).json({
@@ -236,7 +212,7 @@ class UserController {
 
     async updateUser(req, res) {
         try {
-            const userId = req.params.userId;
+            const userId = req.params.id;
             const user = await User.findByPk(userId);
             if (!user) {
                 res.status(404).json({
@@ -255,7 +231,7 @@ class UserController {
 
     async deleteUser(req, res) {
         try {
-            const userId = req.params.userId;
+            const userId = req.params.id;
             if (!Validate.isValidId(req.params.userId)) {
                 res.status(400).json({
                     message: 'Invalid user id'
@@ -278,3 +254,5 @@ class UserController {
         }
     }
 }
+
+module.exports = new UserController();

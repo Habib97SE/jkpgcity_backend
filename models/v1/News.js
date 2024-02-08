@@ -3,6 +3,7 @@ const {
 } = require('sequelize');
 const sequelize = require("../../config/sequelize");
 const User = require('./User');
+const newsCategory = require('./newsCategory');
 
 const News = sequelize.define('news', {
     newsId: {
@@ -46,6 +47,18 @@ const News = sequelize.define('news', {
         type: DataTypes.INTEGER,
         allowNull: false
     },
+    newsCategoryId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        validate: {
+            isAlphanumeric: true,
+            length: [1, 100]
+        },
+        references: {
+            model: 'newscategories',
+            key: 'newsCategoryId'
+        }
+    }
 });
 
 News.belongsTo(User, {
@@ -55,5 +68,14 @@ News.belongsTo(User, {
 User.hasMany(News, {
     foreignKey: 'authorId'
 });
+
+News.belongsTo(newsCategory, {
+    foreignKey: 'newsCategoryId'
+});
+
+newsCategory.hasMany(News, {
+    foreignKey: 'newsCategoryId'
+});
+
 
 module.exports = News;
