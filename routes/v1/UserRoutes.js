@@ -13,8 +13,13 @@ router.post("/login", (req, res) => {
     UserController.login(req, res);
 })
 
+// User logout (requires user role)
+router.get("/logout", jwtAuthMiddleware(['user']), (req, res) => {
+    UserController.logout(req, res);
+})
+
 // Get a single user by ID (requires admin or moderator role)
-router.get('/:id', jwtAuthMiddleware(['admin', 'moderator']), (req, res) => {
+router.get('/:id', jwtAuthMiddleware(['user','admin', 'moderator']), (req, res) => {
     UserController.getUser(req, res);
 });
 

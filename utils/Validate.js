@@ -1,3 +1,5 @@
+
+
 class Validate {
     static isEmail(email) {
         const regex = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
@@ -57,7 +59,7 @@ class Validate {
         if (!this.isNumber(venue.venueCategoryId)) {
             return false;
         }
-        if (!this.name(venue.name)) {
+        if (!this.isName(venue.name)) {
             return false;
         }
         if (!this.isPhone(venue.phone)) {
@@ -67,6 +69,44 @@ class Validate {
             return false;
         }
         return true;
+    }
+
+    static updateUser(body)
+    {
+        return new Promise((resolve, reject) => {
+            if (body.firstName && !Validate.isName(body.firstName)) {
+                reject({
+                    status: 400,
+                    message: 'Invalid first name'
+                });
+            }
+            if (body.lastName && !Validate.isName(body.lastName)) {
+                reject({
+                    status: 400,
+                    message: 'Invalid last name'
+                });
+            }
+            if (body.email && !Validate.isEmail(body.email)) {
+                reject({
+                    status: 400,
+                    message: 'Invalid email'
+                });
+            }
+            if (body.phone && !Validate.isPhone(body.phone)) {
+                reject({
+                    status: 400,
+                    message: 'Invalid phone'
+                });
+            }
+            if (body.password && !Validate.isPassword(body.password)) {
+                reject({
+                    status: 400,
+                    message: 'Invalid password'
+                });
+            }
+
+            resolve(true);
+        });
     }
 }
 

@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
+const cookieParser = require('cookie-parser');
 const sequelize = require('./config/sequelize');
 const app = express();
 const cors = require('cors');
@@ -9,10 +10,16 @@ const FirstVersionRoutes = require('./routes/v1/DistributeRoutes');
 
 
 app.use(express.json());
+app.use(bodyParser.json());
+app.use(cookieParser());
 app.use(cors());
+
+
+/**
+ * Routes starts here
+ */
 app.use('/api/v1', FirstVersionRoutes);
 
-app.use(bodyParser.json());
 
 sequelize.sync().then(() => {
     console.log('Database synced');

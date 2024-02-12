@@ -4,6 +4,7 @@ const UserRoutes = require('./UserRoutes');
 const VenueRoutes = require('./VenueRoutes');
 const NewsRoutes = require('./NewsRoutes');
 
+// Routes
 router.use('/users', UserRoutes);
 router.use('/venues', VenueRoutes);
 router.use('/news', NewsRoutes);

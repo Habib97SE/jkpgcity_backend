@@ -4,35 +4,18 @@ const Permission = require('../../models/v1/Permission');
 
 class NewsCategoryController {
 
-    async checkAccess(req, res, next) {
-        try {
-            const permission = await Permission.findOne({
-                name: 'news_category'
-            });
-            if (permission) {
-                if (req.user.role.permissions.includes(permission._id)) {
-                    next();
-                } else {
-                    res.status(403).json({
-                        message: 'Access denied'
-                    });
-                }
-            } else {
-                res.status(403).json({
-                    message: 'Access denied'
-                });
-            }
-        } catch (error) {
-            res.status(500).json({
-                message: error.message
-            });
-        }
-    }
-
     async getNewsCategories(req, res) {
         try {
             const newsCategories = await NewsCategory.find();
-            res.status(200).json(newsCategories);
+            if (newsCategories.length === 0) {
+                return res.status(404).json({
+                    message: 'No news categories found'
+                });
+            }
+            res.status(200).json({
+                message: 'Success',
+                data: newsCategories
+            });
         } catch (error) {
             res.status(500).json({
                 message: error.message

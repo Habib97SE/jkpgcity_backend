@@ -1,32 +1,25 @@
 const JWT = require("../../utils/JWT");
-const { TokenExpiredError } = require("jsonwebtoken");
+const jsonWebToken = require('jsonwebtoken');
 
 const jwtAuthMiddleware = (roles = []) => {
     return async (req, res, next) => {
-        const token = req.headers.authorization;
-        if (!token) {
-            return res.status(401).json({ message: "Token is required" });
-        }
         try {
-            const decoded = await JWT.verify(token);
-            if (roles.length && !roles.includes(decoded.role)) {
-                return res.status(403).json({ message: "You don't have permission" });
+            const token = req.cookies.auth_token;
+            if (!token) {
+                return res.status(401).json({message: "Unauthorized, token not found"});
             }
-            req.user = decoded;
+            const decoded = await JWT.verify(token, process.env.JWT_ACCESS_TOKEN_SECRET);
+            console.log(decoded);
+            if (!roles.includes(decoded.user.role)) {
+                return res.status(401).json({message: "Unauthorized, invalid role"});
+            }
+            req.user = decoded.user;
             next();
         } catch (error) {
-            console.log(error)
-            // check for refreshToken
-            const headers = req.rawHeaders;
-            const refreshToken = headers.find((header) => header.includes("refreshToken")).split("=")[1]
-            const decoded = await JWT.verify(refreshToken);
-            if (roles.length && !roles.includes(decoded.role)) {
-                return res.status(403).json({ message: "You don't have permission" });
-            }
-            req.user = decoded;
-            next();
+            return res.status(401).json({message: "Unauthorized, error: " + error.message});
         }
     };
 }
 
 module.exports = jwtAuthMiddleware;
+

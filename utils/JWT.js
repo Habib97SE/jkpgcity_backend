@@ -29,7 +29,7 @@ class JWT {
                 iss: 'https://www.jkpgcity.com',
                 sub: 'auth',
                 iat: Math.floor(Date.now() / 1000),
-                exp: Math.floor(Date.now() / 1000) + (60 * 15), // 15 minutes
+                exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24), // 24 hours (1 day)
                 jti: await JWT.generateUniqueIdentifier(user.email)
             };
             const secretAccessToken = process.env.JWT_ACCESS_TOKEN_SECRET;

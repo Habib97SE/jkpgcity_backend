@@ -12,6 +12,12 @@ const {decode} = require("jsonwebtoken");
 
 class UserController {
 
+    async generateToken(req) {
+        const token = req.cookies.auth_token;
+        const decodedToken = await JWT.decodeToken(token);
+        return await JWT.generateAccessToken(decodedToken.user);
+    }
+
     /**
      * Retrieve a list of users
      * @param {Express.Request} req : Request object
@@ -72,8 +78,14 @@ class UserController {
                     }
                 };
             });
-
             const totalPages = Math.ceil(count / pageSize);
+            res.cookie('auth_token', await this.generateToken(req), {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'strict',
+                maxAge: 1000 * 60 * 60 * 24 // 24 hours (1 day)
+            });
+
             res.status(200).json({
                 message: "Success",
                 data: transformedUsers, // Send transformed users in response
@@ -146,6 +158,14 @@ class UserController {
             })
         }
 
+        res.cookie('auth_token', await this.generateToken(req), {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 1000 * 60 * 60 * 24 // 24 hours (1 day)
+        });
+
+
         res.status(200).json({
             message: "Success",
             data: this.createUserData(user)
@@ -179,31 +199,20 @@ class UserController {
                 role: role.roleName,
                 fullName: `${newUser.firstName} ${newUser.lastName}`
             });
-            const refreshToken = await JWT.generateRefreshToken({
-                userId: newUser.userId,
-                email: newUser.email,
-                role: role.roleName,
-                fullName: `${newUser.firstName} ${newUser.lastName}`
-            });
-            // store refreshToken in database
-            const token = {
-                user_id: newUser.userId,
-                token: refreshToken
-            }
-            await Token.create(token);
 
-            // store refreshToken in cookie
-            res.cookie('refreshToken', refreshToken, {
+            await Token.create(accessToken);
+
+
+            res.cookie('auth_token', accessToken, {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production',
                 sameSite: 'strict',
-                maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
-            });
+                maxAge: 1000 * 60 * 60 * 24 // 24 hours (1 day)
+            })
 
             res.status(201).json({
                 message: "Success",
-                data: this.createUserData(newUser),
-                accessToken: accessToken,
+                data: this.createUserData(newUser)
             });
             return;
         } catch (error) {
@@ -214,32 +223,17 @@ class UserController {
         }
     }
 
-    parseCookies(cookieHeader) {
-        const cookies = {};
-        cookieHeader.forEach(cookie => {
-            const parts = cookie.split(';');
-            const cookieName = parts.shift().trim();
-            const [name, value] = cookieName.split('=');
-            cookies[name] = value;
-        });
-        return cookies;
-    }
 
     async login(req, res) {
         try {
-            const cookieHeaderIndex = req.rawHeaders.indexOf('Cookie');
-            const cookieHeader = req.rawHeaders.slice(cookieHeaderIndex + 1);
 
-// Parse the cookies and access the refreshToken
-            const cookies = this.parseCookies(cookieHeader);
-            const refreshToken1 = cookies.refreshToken;
-            if (refreshToken1) {
-
+            if (req.cookies && req.cookies.auth_token) {
                 res.status(400).json({
-                    message: 'Already logged in'
+                    message: 'User already logged in'
                 });
-                return;
             }
+
+
             const email = req.body.email;
             const password = req.body.password;
             if (!email || !password) {
@@ -280,30 +274,23 @@ class UserController {
                 role: role.roleName,
                 fullName: `${user.dataValues.firstName} ${user.dataValues.lastName}`
             });
-            const refreshToken = await JWT.generateRefreshToken({
-                userId: user.userId,
-                email: user.email,
-                role: role.roleName,
-                fullName: `${user.firstName} ${user.lastName}`
-            });
             // store refreshToken in database
             const token = {
                 user_id: user.userId,
-                token: refreshToken
+                token: accessToken
             }
             await Token.create(token);
 
-            res.cookie('refreshToken', refreshToken, {
+            res.cookie('auth_token', accessToken, {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production',
                 sameSite: 'strict',
-                maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
-            });
+                maxAge: 1000 * 60 * 60 * 24 // 24 hours (1 day)
+            })
 
             res.status(200).json({
                 message: 'Success',
                 data: this.createUserData(user),
-                accessToken: accessToken
             });
             return;
         } catch (error) {
@@ -314,10 +301,63 @@ class UserController {
         }
     }
 
+    async logout(req, res) {
+        try {
+            if (!req.cookies.auth_token) {
+                res.status(400).json({
+                    message: 'User not logged in'
+                });
+                return;
+            }
+            const token = req.cookies.auth_token;
+            const decodedToken = await JWT.decodeToken(token);
+            const user = await User.findByPk(decodedToken.user.userId);
+            if (!user) {
+                res.status(404).json({
+                    message: 'User not found'
+                });
+                return;
+            }
+            await Token.destroy({
+                where: {
+                    user_id: user.userId,
+                    token: token
+                }
+            });
+            res.cookie('auth_token', '', {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'strict',
+                maxAge: 0
+            });
+            res.status(200).json({
+                message: 'Success',
+                data: this.createUserData(user)
+            });
+        } catch (error) {
+            res.status(500).json({
+                message: error.message
+            });
+        }
+    }
+
     async updateUser(req, res) {
         try {
-
             const userId = req.params.id;
+            if (!Validate.isValidId(userId)) {
+                res.status(400).json({
+                    message: 'Invalid user id'
+                });
+                return;
+            }
+
+            if (!await Validate.updateUser(req.body)) {
+                res.status(await Validate.updateUser(req.body).message).json({
+                    message: await Validate.updateUser(req.body).message
+                });
+                return;
+            }
+
             const user = await User.findByPk(userId);
             if (!user) {
                 res.status(404).json({
@@ -325,18 +365,19 @@ class UserController {
                 });
                 return;
             }
-            const newAccessToken = await JWT.generateAccessToken({
-                userId: user.userId,
-                email: user.email,
-                role: decodedToken.user.role,
-                fullName: `${user.firstName} ${user.lastName}`
+
+
+            res.cookie('auth_token', await this.generateToken(req), {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'strict',
+                maxAge: 1000 * 60 * 60 * 24 // 24 hours (1 day)
             });
 
             await user.update(req.body);
             res.status(200).json({
                 message: 'Success',
                 data: user,
-                accessToken: newAccessToken
             });
         } catch (error) {
             res.status(500).json({
@@ -360,6 +401,15 @@ class UserController {
                 });
                 return;
             }
+
+            // destroy auth_token cookie, if there is any
+            res.cookie('auth_token', '', {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'strict',
+                maxAge: 0
+            });
+
             await user.destroy();
             res.status(204).json({
                 message: 'Success',
