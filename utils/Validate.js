@@ -27,16 +27,28 @@ class Validate {
 
     static newUser(user) {
         if (!this.isEmail(user.email)) {
-            return false;
+            return {
+                status: 400,
+                message: 'Invalid email'
+            };
         }
         if (!this.isPassword(user.password)) {
-            return false;
+            return {
+                status: 400,
+                message: 'Invalid password'
+            };
         }
         if (!this.isName(user.firstName)) {
-            return false;
+            return {
+                status: 400,
+                message: 'Invalid first name'
+            };
         }
         if (!this.isName(user.lastName)) {
-            return false;
+            return {
+                status: 400,
+                message: 'Invalid last name'
+            };
         }
         return true;
     }

@@ -7,11 +7,11 @@ class Encrypt {
     }
 
     /**
-     * 
-     * @param {string} email 
-     * @param {string} password 
-     * @param {string} salt 
-     * @returns 
+     *  Hashes a password using bcrypt and a salt generated from the email and password.
+     * @param {string} email : The email of the user
+     * @param {string} password : The password of the user
+     * @param {string} salt : The salt to be used to hash the password
+     * @returns : The hashed password
      */
     static hashPassword(email, password, salt) {
         if (salt === undefined) {
